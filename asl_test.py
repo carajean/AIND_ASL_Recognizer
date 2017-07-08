@@ -40,9 +40,9 @@ class TestSelectors(TestCase):
         self.assertGreaterEqual(model.n_components, 2)
 
     def test_select_dic_interface(self):
-        model = SelectorDIC(self.sequences, self.xlengths, 'MARY').select()
+        model = SelectorDIC(self.sequences, self.xlengths, 'MARY').select
         self.assertGreaterEqual(model.n_components, 2)
-        model = SelectorDIC(self.sequences, self.xlengths, 'TOY').select()
+        model = SelectorDIC(self.sequences, self.xlengths, 'TOY').select
         self.assertGreaterEqual(model.n_components, 2)
 
 
