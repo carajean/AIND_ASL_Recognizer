@@ -95,7 +95,7 @@ class SelectorBIC(ModelSelector):
                 bic = -2 * log_l + p * np.log(self.X.shape[0])
                 if bic < min_bic_score:
                     min_bic_score = bic
-                    best_model = model
+                    best_model = self.base_model(number_of_components)
             except:
                 continue
 
@@ -137,10 +137,11 @@ class SelectorDIC(ModelSelector):
                         anti_probabilities.append(anti_model.score(x, lengths))
                     except:
                         continue
+            # Want a high log likelihood compared to average log likelihood of other words for this model
             dic_score = log_l - np.mean(anti_probabilities)
             if dic_score > max_dic_score:
                 max_dic_score = dic_score
-                best_model = model
+                best_model = self.base_model(number_of_components)
 
         return best_model
 
@@ -154,7 +155,8 @@ class SelectorCV(ModelSelector):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
         # DONE implement model selection using CV
-        split_method = KFold(n_splits=2)
+        n_splits = 2
+        split_method = KFold(n_splits)
         best_score = float("-inf")
         best_model = None
 
@@ -163,6 +165,8 @@ class SelectorCV(ModelSelector):
             model = GaussianHMM(n_components=number_of_components, covariance_type="diag", n_iter=1000,
                                 random_state=self.random_state, verbose=False)
             fold_scores = []
+            if len(self.sequences) < n_splits:
+                break
             for cv_train_idx, cv_test_idx in split_method.split(self.sequences):
                 train_x, train_lengths = combine_sequences(cv_train_idx, self.sequences)
                 test_x, test_lengths = combine_sequences(cv_test_idx, self.sequences)
@@ -182,6 +186,6 @@ class SelectorCV(ModelSelector):
 
             if average_score > best_score:
                 best_score = average_score
-                best_model = model
+                best_model = self.base_model(number_of_components)
 
         return best_model

@@ -20,6 +20,34 @@ def recognize(models: dict, test_set: SinglesData):
     warnings.filterwarnings("ignore", category=DeprecationWarning)
     probabilities = []
     guesses = []
-    # TODO implement the recognizer
-    # return probabilities, guesses
-    raise NotImplementedError
+    # DONE implement the recognizer
+
+    # print("Total Length: {}".format(test_set.num_items))
+    for word_id in range(test_set.num_items):
+        log_ls = {}  # dict of log liklihoods of a word
+        best_score = float("-inf")  # best log_l thus far
+        best_guess = None  # best guess for what the word from the test set could be
+        x, lengths = test_set.get_item_Xlengths(word_id)
+
+        for word, model in models.items():
+
+            try:
+                # Assumes a HMM model
+                log_ls[word] = model.score(x, lengths)
+            except:
+                try:
+                    # Assumes a bounded Selector.select method
+                    log_ls[word] = model().score(x, lengths)
+                except:
+                    # Unable to process word with this model
+                    log_ls[word] = float("-inf")
+
+            if log_ls[word] > best_score:
+                best_score = log_ls[word]
+                best_guess = word
+                # print("New Best Guess for {}: {}".format(word_id, best_guess))
+
+        probabilities.append(log_ls)
+        guesses.append(best_guess)
+
+    return probabilities, guesses
