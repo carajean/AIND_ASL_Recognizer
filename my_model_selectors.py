@@ -6,6 +6,7 @@ import numpy as np
 from hmmlearn.hmm import GaussianHMM
 from sklearn.model_selection import KFold
 from asl_utils import combine_sequences
+import pickle
 
 
 class ModelSelector(object):
@@ -109,6 +110,9 @@ class SelectorDIC(ModelSelector):
     Document Analysis and Recognition, 2003. Proceedings. Seventh International Conference on. IEEE, 2003.
     http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.58.6208&rep=rep1&type=pdf
     DIC = log(P(X(i)) - 1/(M-1)SUM(log(P(X(all but i))
+
+    My Original DIC selector
+    Doesn't assume we'll be reusing the words. However runtime can get really long.
     '''
 
     def select(self):
@@ -186,6 +190,67 @@ class SelectorCV(ModelSelector):
 
             if average_score > best_score:
                 best_score = average_score
+                best_model = self.base_model(number_of_components)
+
+        return best_model
+
+class FastSelectorDIC(ModelSelector):
+    ''' select best model based on Discriminative Information Criterion
+
+    Biem, Alain. "A model selection criterion for classification: Application to hmm topology optimization."
+    Document Analysis and Recognition, 2003. Proceedings. Seventh International Conference on. IEEE, 2003.
+    http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.58.6208&rep=rep1&type=pdf
+    DIC = log(P(X(i)) - 1/(M-1)SUM(log(P(X(all but i))
+
+    Faster DIC selector based on the following assumption: reusing the same word dictionary.
+    If word dictionary changes delete the reference_dictionary.pkl file
+    '''
+
+    def select(self):
+        warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+        # Try to load reference dictionary of word (anti)probabilities
+        reference_dictionary = {}
+        try:
+            reference_dictionary = pickle.load(open("reference_dictionary.pkl", "rb"))
+        # Except if this is the first run (ie no reference_dictionary.pkl file found)
+        except:
+            for number_of_components in range(self.min_n_components, self.max_n_components + 1):
+                for word in self.words:
+                    identifier = '{}_{}'.format(word, number_of_components)
+                    try:
+                        anti_model = GaussianHMM(n_components=number_of_components, covariance_type="diag", n_iter=1000,
+                                                 random_state=self.random_state, verbose=False)
+                        x, lengths = self.hwords[word]
+                        anti_model.fit(x, lengths)
+                        reference_dictionary[identifier] = anti_model.score(x, lengths)
+                    except:
+                        reference_dictionary[identifier] = 0
+            pickle.dump(reference_dictionary, open("reference_dictionary.pkl", "wb"))
+
+        # implement model selection based on DIC scores
+        max_dic_score = float("-inf")
+        best_model = None
+
+        for number_of_components in range(self.min_n_components, self.max_n_components + 1):
+            anti_probabilities = []
+            try:
+                model = GaussianHMM(n_components=number_of_components, covariance_type="diag", n_iter=1000,
+                                    random_state=self.random_state, verbose=False)
+                model.fit(self.X, self.lengths)
+                log_l = model.score(self.X, self.lengths)
+            except:
+                continue
+            for word in self.words:
+                if word is not self.this_word:
+                    try:
+                        anti_probabilities.append(reference_dictionary['{}_{}'.format(word, number_of_components)])
+                    except:
+                        continue
+            # Want a high log likelihood compared to average log likelihood of other words for this model
+            dic_score = log_l - np.mean(anti_probabilities)
+            if dic_score > max_dic_score:
+                max_dic_score = dic_score
                 best_model = self.base_model(number_of_components)
 
         return best_model
