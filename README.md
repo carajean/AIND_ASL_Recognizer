@@ -1,8 +1,10 @@
 # AIND_ASL_Recognizer
-American Sign Language Recognizer Implementation. Project for the AI Nanodegree program
+American Sign Language Recognizer Implementation. Project for the Udacity AI Nanodegree program.
 
 ## Overview
-The objective of this project is to identify American Sign Language (ASL) words and phrases from a pre-recorded database. Hidden Markov Models (HMMs) and n-gram language models are used to recognize words based on a collection of features extracted from the data set such as the position of the speaker's hands relative to the speaker's nose and the change in the speaker's hand locations frame-to-frame.
+The objective of this project is to identify American Sign Language (ASL) words and phrases from a pre-recorded database. Hidden Markov Models (HMMs) and n-gram language models are used to recognize words based on a collection of features extracted from the data set. The dataset can be found in the `asl_recognizer/data/` directory and was derived from 
+the [RWTH-BOSTON-104 Database](http://www-i6.informatik.rwth-aachen.de/~dreuw/database-rwth-boston-104.php). 
+The handpositions (`hand_condensed.csv`) are pulled directly from the database [boston104.handpositions.rybach-forster-dreuw-2009-09-25.full.xml](boston104.handpositions.rybach-forster-dreuw-2009-09-25.full.xml).The exctracted features used as HMM input include the position of the speaker's hands relative to the speaker's nose and the change in the speaker's hand locations frame-to-frame.
 
 ## Getting Started
 The project requires Python 3 and the following libraries: 
